@@ -23,11 +23,11 @@ This project aims to provide a comprehensive framework for analyzing relaxation 
 
 1. Clone the repository to your local machine:
    ```
-   git clone https://github.com/yourrepository/relaxation-analysis.git
+   git clone https://github.com/armmosikyan66/Diploma
    ```
-2. Install the required Python packages:
+2. Create virtual env and Install the required Python packages
    ```
-   pip install -r requirements.txt
+   make init
    ```
 
 ## Getting Started
@@ -37,26 +37,20 @@ To begin analyzing relaxation sessions:
 1. Ensure your OpenBCI Cyton board is properly set up and connected.
 2. Run the main analysis script:
    ```
-   python main.py
+   make start
    ```
 3. Follow the on-screen prompts to configure your session parameters.
 
-## Usage Example
 
-```python
-from relaxation_analysis import Session
+This command initiates the project, starting data acquisition and analysis.
 
-# Initialize a new session
-session = Session(session_duration=5, electrodes=['O1', 'O2'])
+## Cleaning Up
 
-# Start the session
-session.start()
+To clean up the project directory (e.g., remove virtual environment and temporary files), run:
 
-# Access the analysis results
-results = session.results
-print(results)
 ```
-
+make clean
+```
 ## Data Analysis
 
 This project applies various signal processing techniques to analyze the EEG data:
@@ -65,14 +59,6 @@ This project applies various signal processing techniques to analyze the EEG dat
 - **Feature Extraction:** Identifies features correlated with relaxation, such as specific frequency bands.
 - **Statistical Analysis:** Compares relaxation metrics across sessions to assess effectiveness.
 
-## Contributing
-
-Contributions to improve the project are welcome. Please refer to the CONTRIBUTING.md file for guidelines on how to make a contribution.
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-This template provides a solid starting point. You can customize each section to fit the specifics of your project. For example, you might want to add more detailed usage examples, delve deeper into the data analysis methodology, or provide a FAQ section if there are common questions about your project.

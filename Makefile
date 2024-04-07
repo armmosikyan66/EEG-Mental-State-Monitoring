@@ -1,34 +1,23 @@
-.PHONY: venv check-deps update-deps install-deps isort black start
+# Makefile for managing the project
 
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
+.PHONY: init start clean
 
-VENV=venv
-PYTHON=$(VENV)/bin/python3
+# Setup the project
+init:
+	@echo "Setting up the project..."
+	python3 -m venv venv
+	@echo "Activating virtual environment..."
+	@. venv/bin/activate
+	pip install -r requirements.txt
 
-cmd-exists-%:
-	@hash $(*) > /dev/null 2>&1 || \
-		(echo "ERROR: '$(*)' must be installed and available on your PATH."; exit 1)
-
-venv: requirements.txt Makefile
-	python3 -m pip install --upgrade pip setuptools wheel
-	python3 -m venv $(VENV)
-	$(PYTHON) -m pip install -r requirements.txt
-
-install-deps:
-	$(PYTHON) -m pip install -r requirements.txt
-
-update-deps:
-	$(PYTHON) -m pip freeze \
- 		sed 's/==.*$/''/' > requirements.txt
-
+# Start the project
 start:
-	uvicorn main:app --reload --log-level debug --host localhost --port ${PORT}
+	@echo "Starting the project..."
+	python3 main.py
 
-.PHONY: format
-
-format:
-	black .
-	isort .
+# Clean the project (e.g., remove temporary files, etc.)
+clean:
+	@echo "Cleaning up..."
+	rm -rf __pycache__
+	rm -rf venv
+	@echo "Clean up completed."
