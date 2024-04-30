@@ -1,121 +1,65 @@
-import time
-import numpy as np
-import uvicorn
-from brainflow.board_shim import BoardShim, BrainFlowInputParams, LogLevels, BoardIds
-from brainflow.data_filter import DataFilter
-from brainflow.ml_model import BrainFlowMetrics, BrainFlowClassifiers, BrainFlowModelParams, MLModel
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-async def main(websocket):
-    params = BrainFlowInputParams()
-    params.serial_port = "/dev/cu.usbserial-DM01N8KH"
-    board = BoardShim(BoardIds.CYTON_BOARD, params)
-    master_board_id = board.get_board_id()
-    eeg_channels = BoardShim.get_eeg_channels(master_board_id)
-    sampling_rate = BoardShim.get_sampling_rate(master_board_id)
+# Importing board configurations, typically for initializing and managing hardware interfaces or other setups
+from configs.board import board
+# Importing a module to load environment variables which typically hold settings necessary for the application configuration
+from configs.environment import get_environment_variables
+# Import routes that define the HTTP endpoints of the application
+from api import routes
+
+# Load environment variables from the configured source
+env = get_environment_variables()
+
+# Initialize FastAPI app with metadata from environment variables
+app = FastAPI(
+    title=env.APP_NAME,  # Title of the application, as a string
+    version=env.API_VERSION,  # Version of the API, as a string
+)
+
+# Set up Cross-Origin Resource Sharing (CORS) middleware
+# This configuration allows the API to handle requests from different domains
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows requests from all origins
+    allow_credentials=True,  # Allows cookies and other credentials
+    allow_methods=["*"],  # Allows all HTTP methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+
+# Event handler for application startup
+@app.on_event("startup")
+async def startup():
+    """
+    Performs application initialization tasks:
+    - Sets up the board session and starts data streaming
+    - Ensures a static directory is available for storing files
+    """
+    # Prepare the session for board operations, like connecting or configuring hardware
     board.prepare_session()
+    # Start streaming data from the board, if applicable (e.g., sensor data, video feeds)
     board.start_stream()
-    BoardShim.log_message(LogLevels.LEVEL_INFO.value, 'start sleeping in the main thread')
-    time.sleep(5)
-    data = board.get_board_data()
 
-    current_step = 2
-
-    def check_relax_session():
-        start_time = time.time()
-
-        relax_count = 0
-        total_checks = 0
-
-        while time.time() - start_time < 5: # 60
-            bands = DataFilter.get_avg_band_powers(
-                data, eeg_channels, sampling_rate, True)
-            feature_vector = np.concatenate((bands[0], bands[1]))
-
-            relaxation_params = BrainFlowModelParams(
-                BrainFlowMetrics.MINDFULNESS.value, BrainFlowClassifiers.DEFAULT_CLASSIFIER.value)
-            relaxation = MLModel(relaxation_params)
-            relaxation.prepare()
-            # print('Relaxation: %f' % relaxation.predict(feature_vector))
-            relaxed_measure = relaxation.predict(feature_vector)
-            relaxation.release()
-
-            if relaxed_measure >= 0.8:
-                relax_count += 1
-
-            total_checks += 1
-
-        relax_percentage = relax_count / total_checks if total_checks > 0 else 0
-
-        if relax_percentage >= 0.6:
-            return True
-        else:
-            return False
-
-    while True:
-        if current_step > 3:
-            board.stop_stream()
-            board.release_session()
-            break
-
-        if check_relax_session():
-            current_step += 1
-            await websocket.send_json({"status": "True"})
-        elif current_step != 1:
-            current_step -= 1
-            await websocket.send_json({"status": "False"})
-        else:
-            time.sleep(5)
-            continue
+    # Ensure the existence of a directory to store static files
+    directory_name = "./static"
+    os.makedirs(directory_name, exist_ok=True)
 
 
+# Event handler for application shutdown
+@app.on_event("shutdown")
+async def shutdown():
+    """
+    Clean-up tasks when application is shutting down:
+    - Stops data streaming and releases board resources
+    """
+    # Stop streaming data from the board
+    board.stop_stream()
+    # Release any sessions or resources held by the board
+    board.release_session()
 
 
-
-#
-# if __name__ == "__main__":
-#     main()
-# app.py
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-
-app = FastAPI()
-
-
-@app.websocket("/relax-session")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            data = await websocket.receive()
-            await main(websocket)
-    except WebSocketDisconnect:
-        pass
-
-
-@app.get("/")
-async def root():
-    return HTMLResponse("""
-    <!DOCTYPE html>
-<html>
-<head>
-    <title>WebSocket Test</title>
-</head>
-<body>
-    <h1>WebSocket Test</h1>
-    <div id="messages"></div>
-
-    <script>
-        var ws = new WebSocket("ws://localhost:5001/relax-session");
-        ws.onopen = function() {
-            ws.send("start");
-        }
-        ws.onmessage = function(event) {
-            console.log(event.data);
-        };
-    </script>
-</body>
-</html>
-    """)
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="localhost", port=5001, log_level="debug", reload=True)
+# Include the routes from the routes module into the FastAPI application
+# This step is crucial to make the defined endpoints accessible
+app.include_router(routes)

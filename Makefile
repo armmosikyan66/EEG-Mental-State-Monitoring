@@ -1,6 +1,12 @@
-# Makefile for managing the project
-
 .PHONY: init start clean
+
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
+VENV=venv
+PYTHON=$(VENV)/bin/python3
 
 # Setup the project
 init:
@@ -12,8 +18,7 @@ init:
 
 # Start the project
 start:
-	@echo "Starting the project..."
-	python3 main.py
+	uvicorn main:app --reload --log-level debug --host localhost --port ${PORT}
 
 # Clean the project (e.g., remove temporary files, etc.)
 clean:
