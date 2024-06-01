@@ -23,7 +23,7 @@ This project aims to provide a comprehensive framework for analyzing relaxation 
 
 1. Clone the repository to your local machine:
    ```
-   git clone https://github.com/armmosikyan66/Diploma
+   git clone https://github.com/armmosikyan66/EEG-Mental-State-Monitoring
    ```
 2. Create virtual env and Install the required Python packages
    ```
