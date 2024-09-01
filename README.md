@@ -1,4 +1,4 @@
-# Analyzing Relaxation Sessions with BrainFlow and OpenBCI Cyton
+# Analyzing Relaxation/Concentration Sessions with BrainFlow and OpenBCI Cyton
 
 ## Introduction
 
